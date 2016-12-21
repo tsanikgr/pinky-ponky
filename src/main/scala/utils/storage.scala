@@ -80,7 +80,7 @@ object storage {
   def loadPending(): Unit = {
     val lines = scala.io.Source.fromFile(PENDING_CONFS_PATH).getLines().toList
     if (lines.nonEmpty) {
-      //      bot.sendMessageChannel(bot.getChannel, "There were unconfirmed games, but I had to restart! I will re-send confirmation messages now! Sorry about that!")
+      confirmationQueue.clearPending()
       lines.map(_.split(',')).foreach{ r => confirmationQueue.newResult(Result(r(0), r(1), r(2).toInt, r(3).toInt), fromLoading = true)}
     }
   }

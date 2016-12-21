@@ -18,7 +18,10 @@ case class Player(id: String,
                   var setsWon: Int,
                   var setsLost: Int) {
 
-  def shortName: String = players.formatName(name)
+  private var _shortName = players.formatName(name)
+  def shortName: String = name
+  def shortName_=(name: String) = _shortName = name
+
   def totalGames = gamesWon + gamesLost + gamesDrawn
   def totalSets = setsWon + setsLost
 
@@ -105,9 +108,23 @@ object players {
     if (p.isEmpty) {
       val newPlayer = Player(playerId)
       players += newPlayer
+			updateShortNames()
       newPlayer
     } else p.get
   }
+
+	def updateShortNames(): Unit = players synchronized {
+		val names = players.map(_.shortName)
+		if (names.length == names.distinct.length) return ()
+
+		players
+			.groupBy(_.shortName)
+			.filter(_._2.length > 1)
+		  .foreach(_._2.foreach{p =>
+				p.shortName = Table.capitalise(p
+					.name
+					.split('.').head) + " " + p.name.split('.').tail.map(n => Table.capitalise(n.substring(0, (2 min n.length-1) max 0))).mkString(" ")})
+	}
 
   def reload(): Unit = players synchronized {
     players.clear()
@@ -179,7 +196,7 @@ object players {
   //    new Table(rowsWithPos, Player.header)
   //  }
 
-  def formatName(name: String): String = Table.capitalise(name.split('.').head) + " " + name.split('.').tail.map(_.charAt(0).toUpper).mkString(" ")
+  def formatName(name: String): String = Table.capitalise(name.split('.').head) + " " + name.split('.').tail.map(_.charAt(0).toUpper).mkString("")
 
   def playerStats(id: String): String = {
     def getOpponent(id: String, result: Result): String = if (result.p1 == id) result.p2 else result.p1

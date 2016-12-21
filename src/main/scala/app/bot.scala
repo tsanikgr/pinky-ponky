@@ -1,6 +1,7 @@
 package app
 
 import akka.actor.ActorSystem
+import slack.api.BlockingSlackApiClient
 import slack.models.{ChannelJoined, Message, MessageChanged}
 import slack.rtm.SlackRtmClient
 import utils.storage
@@ -20,6 +21,7 @@ object bot extends App {
   implicit val system = ActorSystem("qb_pong")
   implicit val ec = system.dispatcher
 
+  val apiClient = BlockingSlackApiClient(token)
   val client = SlackRtmClient(token)
   val selfId = client.state.self.id
   def getSystem = system
@@ -40,7 +42,7 @@ object bot extends App {
     val id =
       if (testing) idToChannel(nameToId(admin).get)
       else {
-        if (!imExists(user)) client.apiClient.openIm(user)
+        if (!imExists(user)) apiClient.openIm(user)
         else idToChannel(user)
       }
 

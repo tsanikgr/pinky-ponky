@@ -41,6 +41,10 @@ object confirmationQueue {
     all
   }
 
+  def clearPending() = pending synchronized {
+    pending.clear()
+  }
+
   def notify(p1: String, p2: String, table: Table) = {
     bot.sendMessage(p1, s"You both reported the same score! Putting it down.\nHere are your new stats:\n${table.toString(true)}")
     bot.sendMessage(p2, s"You both reported the same score! Putting it down.\nHere are your new stats:\n${table.toString(true)}")

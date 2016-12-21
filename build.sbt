@@ -9,7 +9,7 @@ scalaVersion := scalaVersionString
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "2.4.10" exclude("commons-logging", "commons-logging"),
 //  "com.microsoft.sqlserver" % "sqljdbc4" % "4.0" exclude("commons-logging", "commons-logging"),
-  "com.github.gilbertw1" %% "slack-scala-client" % "0.1.8" exclude("commons-logging", "commons-logging")
+  "com.github.gilbertw1" %% "slack-scala-client" % "0.2.0" exclude("commons-logging", "commons-logging")
 )
 
 //lazy val sparkFatJar = project.in(file("subpojects/spark-fat-jar"))

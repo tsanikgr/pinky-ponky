@@ -39,7 +39,7 @@ object Cmd {
   def apply(message: Message): Cmd = {
     //    val args = message.text.split(" ").filterNot(_.matches("^<@.*"))
 
-    message.text.toLowerCase match {
+    message.text.trim.toLowerCase match {
       case c: String if c.startsWith("vs") => NewResultCmd(message)
       case c: String if c.startsWith("stats") => StatsCmd(message)
       case c: String if c.startsWith("stats by") => StatsCmd(message)
