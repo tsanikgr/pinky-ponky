@@ -11,29 +11,30 @@ import scala.util.{Failure, Success, Try}
   */
 
 object Cmd {
-  val commands: List[String] = List(
-    "vs @<opponent> 2-1",
-    "stats",
-    "stats by <column to order>",
-    "stats me",
-    "stats @<player-name>",
-    "challenge @<opponent>",
-    "pending",
-    "tournament",
-    "register",
-    "next",
-    "top10",
-    "help")
+  val commands: List[(String, String)] = List(
+    ("vs @<opponent> 2-1", "Report a score after a match."),
+    ("stats", "See the leaderboard"),
+    ("top10", "The best"),
+    ("stats by <column to order>", "Sort the leaderboard by 'elo', 'games', 'win%', 'streak' or 'sets'"),
+    ("stats me", "Show your personal stats against others"),
+    ("stats @<player-name>", "See the personal stats of someone else"),
+    ("challenge @<opponent>", "Challenge an opponent to a game of :table_tennis_paddle_and_ball:"),
+    ("pending", "See who has not yet confirmed a score"),
+    ("tournament", "See the progress of a tournament"),
+    ("register", "Register to a tournament"),
+    ("next", "See the upcoming matches"),
+    ("help", "See this message"))
 
   def usage =
-    s"""The available commands are:\n${commands.map(c => s"- `$c`").mkString("\n")}
-        |
-       |To prevent spam, prefer to talk to me in a private room :robot_face::wink:
-        |Sometimes though, you need to brag - do it here! :crown:
-        |
-       |I will always ask the other player to verify the score.
-        |
-       |Weekly tournaments coming soon!
+    s"""The available commands are:\n${commands.map{case(c, e) => s"- `$c`: $e"}.mkString("\n")}
+       |
+       |- To prevent spam, prefer to talk to me in a *private room* :robot_face::wink:
+       |
+       |- Sometimes though, you need to *brag* - do it here! :crown:
+       |
+       |- I will always ask the other player to verify the score.
+       |
+       |- Keep an eye in this channel if you want to play in *tournaments*!
      """.stripMargin
 
   def apply(message: Message): Cmd = {
@@ -166,7 +167,7 @@ case class PendingCmd(message: Message) extends Cmd(message) {
     val pending = confirmationQueue.getPending.filter(_._2.nonEmpty)
     if (pending.isEmpty) "No results pending! :wheeeey:"
     else pending.map { r =>
-      s"`${bot.fromId(r._1).get}`:\n${r._2.map(res => s"${bot.fromId(res.p1).get} vs ${bot.fromId(res.p2).get} ${res.p1Score}-${res.p2Score}").mkString("\n")}"
+      s"`${players(r._1).shortName()}`:\n${r._2.map(res => s"${players(res.p1).shortName()} vs ${players(res.p2).shortName()} ${res.p1Score}-${res.p2Score}").mkString("\n")}"
     }.mkString("\n")
   }
 }
