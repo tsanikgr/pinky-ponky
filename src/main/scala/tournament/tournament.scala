@@ -21,7 +21,7 @@ object tournament {
         if (players.contains(player)) "Player already registered"
         else {
           players += player
-          s"${player.shortName} registered!"
+          s"${player.shortName()} registered!"
         }
       } else "Registration is closed!"
     }
@@ -35,14 +35,14 @@ object tournament {
     }
 
     override def toString: String =
-      if (registering) "Currently registered:\n" + players.map("`" + _.shortName + "`").sorted.mkString("\n")
+      if (registering) "Currently registered:\n" + players.map("`" + _.shortName() + "`").sorted.mkString("\n")
       else if (tree.isEmpty) "No tree exists"
       else tree.get.toString
   }
 
   /***************************************************************************************************/
 
-  val colWidth = 34
+  val colWidth = 30
   val fakePlayers = List.tabulate(40)(i => Player("" + (i + 1), fake = true))
   private var current: Option[Tournament] = None
 
@@ -93,10 +93,10 @@ object tournament {
     val upcoming2 = tree.getUpcoming(Some(p2))
     val common = "Thanks for this tournament result."
     val m1 =
-      if (winner.isDefined && winner.get.id == p1) s"Congratulations ${winner.get.shortName}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
+      if (winner.isDefined && winner.get.id == p1) s"Congratulations ${winner.get.shortName()}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
       else common + {if (upcoming1.nonEmpty) upcoming1.mkString("\n*:calendar:Your next games:*","\n", "") else "\nNo pending tournament games."}
     val m2 =
-      if (winner.isDefined && winner.get.id == p2) s"Congratulations ${winner.get.shortName}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
+      if (winner.isDefined && winner.get.id == p2) s"Congratulations ${winner.get.shortName()}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
       else common +{if (upcoming2.nonEmpty) upcoming2.mkString("\n*:calendar:Your next games:*\n","\n", "") else "\nNo pending tournament games."}
 
     bot.sendMessage(p1, m1, 1 second)
@@ -104,7 +104,7 @@ object tournament {
 
     if (winner.isDefined) {
       //      bot.sendMessageChannel(bot.getChannel, tree.toString)
-      bot.sendMessageChannel(bot.getChannel, s"Congratulations to *${winner.get.shortName}* for winning the tournament! :crown::clap:")
+      bot.sendMessageChannel(bot.getChannel, s"Congratulations to *${winner.get.shortName()}* for winning the tournament! :crown::clap:")
       bot.sendMessageChannel(bot.getChannel, s"/giphy I believe I can fly")
     }
   }
@@ -119,7 +119,7 @@ object tournament {
 
   override def toString: String = {
     if (current.isEmpty) return "No tournament exists."
-    if (winner.isDefined) tree.toString + "\nThe winner:crown: is *" + winner.get.shortName + "*. Congratulations! :clap:"
+    if (winner.isDefined) tree.toString + "\nThe winner:crown: is *" + winner.get.shortName() + "*. Congratulations! :clap:"
     else current.get.toString
   }
 

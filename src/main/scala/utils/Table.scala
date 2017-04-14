@@ -250,6 +250,6 @@ object Table /*extends App*/{
   }
 
   def capitalise(value: String): String =
-    if (value.length < 2) value
+    if (value.length < 2) value.toUpperCase()
     else value.substring(0,1).toUpperCase + value.substring(1)
 }

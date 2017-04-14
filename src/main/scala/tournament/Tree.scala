@@ -73,8 +73,8 @@ class Tree(players: Seq[Player]) {
     }
 
     if (notify && root.p1.isDefined && root.p2.isDefined){
-      if (notify1) bot.sendMessage(root.p2.get.id, s":calendar:Your next tournament match is with... *${root.p1.get.name.split('.').map(n => Table.capitalise(n)).mkString(" ")}*")
-      if (notify2) bot.sendMessage(root.p1.get.id, s":calendar:Your next tournament match is with... *${root.p2.get.name.split('.').map(n => Table.capitalise(n)).mkString(" ")}*")
+      if (notify1) bot.sendMessage(root.p2.get.id, s":calendar:Your next tournament match is with... *${root.p1.get.shortName()}*")
+      if (notify2) bot.sendMessage(root.p1.get.id, s":calendar:Your next tournament match is with... *${root.p2.get.shortName()}*")
     }
   }
 
@@ -167,7 +167,7 @@ class Tree(players: Seq[Player]) {
       .map {
         case ((g: Group, i: Int)) =>
           (i,
-            if (g.finished) new Table(g.getRanks.map { case ((p, w)) => Row(Seq(p.shortName, w))}, Seq("Group " + (i + 1), ""))
+            if (g.finished) new Table(g.getRanks.map { case ((p, w)) => Row(Seq(p.shortName(), w))}, Seq("Group " + (i + 1), ""))
             else g.gamesTable)
         case (_, i) => (i, new Table(Seq(Row(Seq()))))
       }

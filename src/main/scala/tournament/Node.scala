@@ -72,12 +72,12 @@ case class Game(var p1: Option[Player] = None,
   }
 
   override def toString: String =
-    if (score1.isDefined) p1.map(_.shortName).get + s" ${score1.get}" + "-" + s"${score2.get} " + p2.map(_.shortName).get
-    else p1.map(_.shortName).getOrElse("______")+ " - " + p2.map(_.shortName).getOrElse("______")
+    if (score1.isDefined) p1.map(_.shortName()).get + s" ${score1.get}" + "-" + s"${score2.get} " + p2.map(_.shortName()).get
+    else p1.map(_.shortName()).getOrElse("______")+ " - " + p2.map(_.shortName()).getOrElse("______")
 
   def simpleName: Option[String] = {
     if (p1.isEmpty || p2.isEmpty) None
-    else Some("`" + p1.map(_.shortName).get + " - " + p2.map(_.shortName).get + "`")
+    else Some("`" + p1.map(_.shortName()).get + " - " + p2.map(_.shortName()).get + "`")
   }
 
   def toSave: Option[String] = {
@@ -146,7 +146,7 @@ case class Group(id: Int, players: Seq[Player]) extends Node {
   }
 
   def gamesTable: Table = new Table(games.map(g =>
-    Row(Seq(g.p1.map(_.shortName).getOrElse("None") + " - " + g.p2.map(_.shortName).getOrElse("None"),
+    Row(Seq(g.p1.map(_.shortName()).getOrElse("None") + " - " + g.p2.map(_.shortName()).getOrElse("None"),
       if(g.score1.isDefined && g.score2.isDefined) g.score1.get + "-" + g.score2.get else ""))), Seq("Group "+ (id + 1), ""))
 
   def toSave: String = players.map(p => s"$id,${p.id}").mkString("\n")
