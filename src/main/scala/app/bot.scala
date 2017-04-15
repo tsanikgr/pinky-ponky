@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import slack.api.BlockingSlackApiClient
 import slack.models.{ChannelJoined, Message, MessageChanged}
 import slack.rtm.SlackRtmClient
+import tournament.tournamentWatcher
 import utils.storage
 
 import scala.concurrent.duration.FiniteDuration
@@ -27,13 +28,15 @@ object bot extends App {
   def getSystem = system
 
   storage.read()
+	tournamentWatcher.startWatching()
 
   client.onMessage { message => onMessage(message) }
 
-  def sendMessageChannel(channelName: String, text: String): Unit = {
+  def sendMessageChannel(channelName: Option[String] = None, text: String): Unit = {
     val channelId: String =
       if (testing) idToChannel(nameToId(admin).get)
-      else bot.client.state.channels.find(_.name == channelName).get.id
+      else if (channelName.isDefined) bot.client.state.channels.find(_.name == channelName.get).get.id
+      else bot.client.state.channels.find(_.name == channel).get.id
 
     client.sendMessage(channelId, if (testing) "*TO CHANNEL*\n" + text else text)
   }
