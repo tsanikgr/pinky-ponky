@@ -69,12 +69,18 @@ class Table(val rows: Seq[Row], val header: Option[Row]) {
     val percentageCols = getPercentageCols(header)
 
     val r = if (rowsToShow == -1) rows.length else rowsToShow
+    val stringRows = {
+			if (rows.isEmpty && rowsToShow != 0 && header.isDefined)
+				Seq(Row(header.get.values.map(_ => "")).toRowString(widths, false, percentageCols.toSet)).mkString("", "\n", "\n")
+			else
+				rows.take(r).map(_.toRowString(widths, false, percentageCols.toSet)).mkString("", "\n", "\n")
+    }
 
     val q =
       if (noQuotes) ""
       else "```"
     q + {if (printHeader && header.isDefined) hLine(widths) + header.get.toColumnString(widths) + "\n" else ""} +
-      hLine(widths) + rows.take(r).map(_.toRowString(widths, false, percentageCols.toSet)).mkString("", "\n", "\n") + hLine(widths) + q
+      hLine(widths) + stringRows + hLine(widths) + q
   }
 
   def minus(other: Table): Option[Table] = {
@@ -155,7 +161,7 @@ case class Row(values: Seq[Any]) {
 
     columnWidths.zipWithIndex.zip(values).map{case ((w, i), v) => (w, Try(Table.toString(v, percentageCols.contains(i))))}.map {
       case (width, Success(value)) => " " + value + space(" " + value, width)
-      case (width, Failure(_)) => space("", width)
+      case (width, Failure(_)) => space(" ", width)
     }.mkString("|", "|", "|")
   }
 
