@@ -1,7 +1,8 @@
 package app
 
 import slack.models.Message
-import tournament.tournament
+import tournament.tournamentWatcher
+import tournament._
 import utils.storage
 
 import scala.util.{Failure, Success, Try}
@@ -41,7 +42,7 @@ object Cmd {
     //    val args = message.text.split(" ").filterNot(_.matches("^<@.*"))
 
     message.text.trim.toLowerCase match {
-      case c: String if c.startsWith("vs") => NewResultCmd(message)
+      case c: String if c.startsWith("vs ") => NewResultCmd(message)
       case c: String if c.startsWith("stats") => StatsCmd(message)
       case c: String if c.startsWith("stats by") => StatsCmd(message)
       case c: String if c == "y" || c == "yes" => ConfirmCmd(message)
@@ -51,22 +52,25 @@ object Cmd {
       case c: String if c == "register" => RegisterCmd(message)
       case c: String if c == "next" => NextGames(message)
       case c: String if c == "tournament" => PrintTournament(message)
-      case c: String if c == "top10" => Top10Cmd(message)
+      case c: String if c == "top10" | c == "top 10" => Top10Cmd(message)
       case c: String if c.startsWith("challenge") => ChallengeCmd(message)
 
       case c: String if c == "exit" && bot.fromId(message.user).getOrElse("unknown") == bot.admin => ExitCmd(message)
       case c: String if c == "reload" && bot.fromId(message.user).getOrElse("unknown") == bot.admin => ReloadCmd(message)
+			case c: String if c.startsWith("id") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => IdCmd(message)
+
+			case c: String if c.startsWith("message") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => SendMessage(message)
+
+			case c: String if c.startsWith("result") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => VerifyResult(message)
+			case c: String if c.startsWith("deletepending") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => DeletePending(message)
 
       case c: String if c == "new tournament" && bot.fromId(message.user).getOrElse("unknown") == bot.admin => NewTournament(message)
       case c: String if c == "start" && bot.fromId(message.user).getOrElse("unknown") == bot.admin => StartTournament(message)
       case c: String if c == "stop" && bot.fromId(message.user).getOrElse("unknown") == bot.admin => StopTournament(message)
-
-      case c: String if c.startsWith("result") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => NewResult(message)
       case c: String if c.startsWith("register") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => RegisterCmd(message)
-      case c: String if c.startsWith("id") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => IdCmd(message)
-      case c: String if c.startsWith("deletepending") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => DeletePending(message)
+			case c: String if c.startsWith("vst") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => NewTournamentResult(message)
       case c: String if c.startsWith("delete") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => DeleteTournamentResult(message)
-
+			case c: String if c.startsWith("extend") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => ExtendDeadline(message)
       case _ => NoReplyCmd(message)
     }
   }
@@ -198,7 +202,9 @@ case class NewTournament(message: Message) extends Cmd(message) {
     import scala.concurrent.duration._
 
     val pls = players.players.zipWithIndex.foreach{ case(p,i) => bot.sendMessage(p.id,
-      ":trophy:The tournament is now open for registration! Type `register` if you want to play.:trophy:\nRegistration closes at 5pm!", i*500.0 millis)}
+      ":trophy:The tournament is now open for registration! Type `register` if you want to play.:trophy:" +
+				"\n        Registration closes at 5pm!" +
+				"\n        Only register if you have time to play 1-3 matches per week.", i*1.0 seconds)}
     //    players.players.foreach(p => RegisterCmd(Message(message.ts, channel, user, s"register ${p.id}", None)).execute)
     "Created new tournament"
   }
@@ -209,7 +215,7 @@ case class NewTournament(message: Message) extends Cmd(message) {
 case class StartTournament(message: Message) extends Cmd(message) {
   override def execute: Try[String] = Try {
     if (tournament.start) {
-      bot.sendMessageChannel(bot.getChannel, tournament.toString + "\nTournament started!\n" + tournament.nextGames)
+      bot.sendMessageChannel(Some(bot.getChannel), tournament.toString + "\nTournament started!\n" + tournament.nextGames)
       "Tournament started"
     }
     else "Tournament cannot start"
@@ -243,7 +249,7 @@ case class PrintTournament(message: Message) extends Cmd(message) {
 
 /********************************************************************************/
 
-case class NewResult(message: Message) extends Cmd(message) {
+case class VerifyResult(message: Message) extends Cmd(message) {
   override def execute: Try[String] = Try {
     val result = Result(args(1), args(2), args(3).toInt, args(4).toInt)
     //    tournament.newResult(result)
@@ -267,7 +273,13 @@ case class DeleteTournamentResult(message: Message) extends Cmd(message) {
 case class RegisterCmd(message: Message) extends Cmd(message) {
   override def execute: Try[String] = Try {
     if (args.length == 1) tournament.register(user)
-    else tournament.register(args(1))
+    else {
+			def register(players: Seq[String], acc: String): String = players match {
+				case Nil => acc
+				case h::t => register(t, acc + tournament.register(h) + "\n")
+			}
+			register(args.tail, "")
+		}
   }
 }
 
@@ -291,7 +303,36 @@ case class DeletePending(message: Message) extends Cmd(message) {
 /********************************************************************************/
 
 case class Top10Cmd(message: Message) extends Cmd(message) {
-  def execute: Try[String] = Try{
+  def execute: Try[String] = Try {
     s"""${players.leaderboard().toString(true, rowsToShow = 10)}"""
   }
+}
+
+/********************************************************************************/
+
+case class SendMessage(message: Message) extends Cmd(message) {
+  def execute: Try[String] = Try{
+		if (args.size > 2) bot.sendMessage(bot.nameToId(args(1)).get, args.drop(2).mkString(" "))
+		else bot.sendMessageChannel(text = args.drop(2).mkString(" "))
+    s"""OK, sent"""
+  }
+}
+
+/********************************************************************************/
+
+case class ExtendDeadline(message: Message) extends Cmd(message) {
+	def execute: Try[String] = Try{
+		tournamentWatcher.extendDeadline(args(1).toInt, Try{args(2)}.toOption, Try{args(3)}.toOption)
+		s"""OK, extended"""
+	}
+}
+
+/********************************************************************************/
+
+case class NewTournamentResult(message: Message) extends Cmd(message) {
+	def execute: Try[String] = Try{
+		val result = Result(args(1), args(2), args(3).toInt, args(4).toInt)
+		if (tournament.newResult(result)) tournament.confirmResult(result.p1,result.p2)
+		s"""OK"""
+	}
 }
