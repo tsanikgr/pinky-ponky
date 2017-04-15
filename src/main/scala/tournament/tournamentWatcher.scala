@@ -28,7 +28,7 @@ object tournamentWatcher {
 		system.scheduler.schedule(at10am, 24 hours) { () =>
 			if (tournament.exists) {
 				finishGames()
-//				notifyDeadlines()
+				notifyDeadlines()
 			}
 		}
 	}
