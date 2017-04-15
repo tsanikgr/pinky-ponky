@@ -253,8 +253,8 @@ object players {
 			val pInfo: Seq[Any] = player.get.toSeq
 			s"${new Table(Seq(Row(getPosition(id) +: pInfo)),Player.header).toString(true)}\n" +
 				s"${new Table(rows, header).sortBy("Games").reverse.toString(true)}\n" +
-				f"Average opponent rating: *${averageOpponentRating}%.0f*\n" +
-				s"Nemesis: *${opponents.zip(win).zip(games).sortBy{case ((_,w),g) => w.toDouble/g}.map(_._1._1).map(id => bot.fromId(id)).head.get}*"
+				f"Average opponent rating: *$averageOpponentRating%.0f*\n" +
+				s"Nemesis: *${opponents.zip(win).zip(games).sortBy{case ((_,w),g) => w.toDouble/g}.map(_._1._1).take(1).map(id => apply(id).shortName()).head}*"
 		}
 	}
 }
