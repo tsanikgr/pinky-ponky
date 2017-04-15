@@ -1,5 +1,6 @@
 package tournament
 
+import java.time.LocalDate
 import app.{Player, Result}
 import utils.{Row, Table}
 
@@ -20,11 +21,23 @@ case class Game(var p1: Option[Player] = None,
                 var score2: Option[Int] = None,
                 leftChild: Node,
                 rightChild: Node) extends Node {
+
+	var created: Option[LocalDate] = None
+	updateDate()
+
+	def updateDate(date: Option[LocalDate] = None) = {
+		created =
+			if (p1.isDefined && p2.isDefined && !finished) {
+        if (date.isDefined) date
+        else Some(LocalDate.now())
+      } else None
+	}
+
   def setScore(p1Score: Int, p2Score: Int) = { score1 = Some(p1Score); score2 = Some(p2Score)}
   def deleteScore() = {score1 = None ; score2 = None}
   def finished: Boolean = leftChild.finished && rightChild.finished && ((p1.isEmpty && p2.isEmpty) || (p1.isDefined && p2.isEmpty) || (p1.isEmpty && p2.isDefined) || (score1.isDefined && score2.isDefined))
   def isBetween(player1: String, player2: String): Boolean = isBetween(tournament.player(player1), tournament.player(player2))
-
+	def opponent(id: String) = if (p1.isDefined && p1.get.id == id) p2 else if (p2.isDefined && p2.get.id == id) p1 else None
   def isBetween(player1: Player, player2: Player): Boolean = {
     (p1.isDefined && p2.isDefined) &&
       ((p1.get.id == player1.id && p2.get.id == player2.id) ||
@@ -34,11 +47,12 @@ case class Game(var p1: Option[Player] = None,
   def plays(p: String): Boolean = p1.isDefined && p2.isDefined && (p1.get.id == p || p2.get.id == p)
 
   def setScore(result: Result): Boolean = {
-    if (result.p1Score == result.p2Score) return false
-
+//    if (result.p1Score == result.p2Score) return false
     if (finished || !isBetween(result.p1, result.p2)) return false
     if (p1.get.id == result.p1 && p2.get.id == result.p2) setScore(result.p1Score, result.p2Score)
     else setScore(result.p2Score, result.p1Score)
+
+		updateDate()
     true
   }
 
@@ -46,6 +60,7 @@ case class Game(var p1: Option[Player] = None,
     if (!finished || !isBetween(result.p1, result.p2)) false
     else {
       deleteScore()
+			updateDate()
       true
     }
   }
@@ -56,7 +71,8 @@ case class Game(var p1: Option[Player] = None,
     else if (p2.isEmpty) p1
     //      else if (p1.get.id.toDouble < p2.get.id.toDouble) p1
     else if (score1.get > score2.get) p1
-    else p2
+    else if (score1.get < score2.get) p2
+		else None
 
   def toString(ind: Int): String = {
     val space: String = {
@@ -73,7 +89,11 @@ case class Game(var p1: Option[Player] = None,
 
   override def toString: String =
     if (score1.isDefined) p1.map(_.shortName()).get + s" ${score1.get}" + "-" + s"${score2.get} " + p2.map(_.shortName()).get
-    else p1.map(_.shortName()).getOrElse("______")+ " - " + p2.map(_.shortName()).getOrElse("______")
+		else if (finished) {
+			if (p1.isDefined) p1.map(_.shortName()).get
+			else if (p2.isDefined) p2.map(_.shortName()).get
+			else ""
+		} else p1.map(_.shortName()).getOrElse("______") + " - " + p2.map(_.shortName()).getOrElse("______")
 
   def simpleName: Option[String] = {
     if (p1.isEmpty || p2.isEmpty) None
@@ -97,7 +117,7 @@ case class Group(id: Int, players: Seq[Player]) extends Node {
   def hasBetween(p1: String, p2: String): Boolean = games.exists(_.isBetween(p1, p2))
 
   def setScore(result: Result): Boolean = {
-    if (result.p1Score == result.p2Score) return false
+//    if (result.p1Score == result.p2Score) return false
 
     val game = games.find(g => !g.finished && g.isBetween(result.p1, result.p2))
     if (game.nonEmpty) {
@@ -126,18 +146,27 @@ case class Group(id: Int, players: Seq[Player]) extends Node {
       .sortWith {
       case ((p1, pos1), (p2, pos2)) => pos1 > pos2 || ((pos1 == pos2) && games
         .find(_.isBetween(p1, p2))
-        .get.winner
+				.getOrElse(Game(leftChild = Leaf, rightChild = Leaf))
+        .winner
         .getOrElse(p2) == p1) //score between the 2 players
     }
   }
 
   def winner: Option[Player] =
     if (!finished) None
-    else getRanks.headOption.map(_._1)
+    else {
+			val ranks = getRanks
+			if (ranks.length > 2) getRanks.find(_._2 > 0).map(_._1)
+			else getRanks.headOption.map(_._1)
+		}
 
   def runnerUp: Option[Player] =
     if (!finished) None
-    else getRanks.drop(1).headOption.map(_._1)
+    else {
+			val ranks = getRanks
+			if (ranks.length > 2) getRanks.drop(1).find(_._2 > 0).map(_._1)
+			else getRanks.drop(1).headOption.map(_._1)
+		}
 
   override def toString: String = {
     games.map{g =>

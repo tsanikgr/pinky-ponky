@@ -31,6 +31,8 @@ object tournament {
       if (players.length > 1) {
         tree = Some(new Tree(players.sortBy(_.elo).reverse))
         storage.saveTree(tree.get)
+
+				tournamentWatcher.tournamentStarted()
       } else tournament.stop()
     }
 
@@ -86,26 +88,26 @@ object tournament {
     }
   }
 
-  def confirmResult(p1: String, p2: String): Unit = {
+  def confirmResult(p1: String, p2: String, notify: Boolean = true): Unit = {
     if (!exists) return
     winner
-    val upcoming1 = tree.getUpcoming(Some(p1))
-    val upcoming2 = tree.getUpcoming(Some(p2))
-    val common = "Thanks for this tournament result."
-    val m1 =
-      if (winner.isDefined && winner.get.id == p1) s"Congratulations ${winner.get.shortName()}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
-      else common + {if (upcoming1.nonEmpty) upcoming1.mkString("\n*:calendar:Your next games:*","\n", "") else "\nNo pending tournament games."}
-    val m2 =
-      if (winner.isDefined && winner.get.id == p2) s"Congratulations ${winner.get.shortName()}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
-      else common +{if (upcoming2.nonEmpty) upcoming2.mkString("\n*:calendar:Your next games:*\n","\n", "") else "\nNo pending tournament games."}
-
-    bot.sendMessage(p1, m1, 1 second)
-    bot.sendMessage(p2, m2, 1 second)
+		if (notify) {
+			val upcoming1 = tree.getUpcoming(Some(p1))
+			val upcoming2 = tree.getUpcoming(Some(p2))
+			val common = "Thanks for this tournament result."
+			val m1 =
+				if (winner.isDefined && winner.get.id == p1) s"Congratulations ${winner.get.shortName()}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
+				else common + {if (upcoming1.nonEmpty) upcoming1.mkString("\n*:calendar:Your next games:*\n","\n", "") else "\nNo pending tournament games."}
+			val m2 =
+				if (winner.isDefined && winner.get.id == p2) s"Congratulations ${winner.get.shortName()}, you won the tournament! :tada::tada::tada: :champagne::champagne::champagne:"
+				else common +{if (upcoming2.nonEmpty) upcoming2.mkString("\n*:calendar:Your next games:*\n","\n", "") else "\nNo pending tournament games."}
+      bot.sendMessage(p1, m1, 1 second)
+      bot.sendMessage(p2, m2, 1 second)
+    }
 
     if (winner.isDefined) {
-      //      bot.sendMessageChannel(bot.getChannel, tree.toString)
-      bot.sendMessageChannel(bot.getChannel, s"Congratulations to *${winner.get.shortName()}* for winning the tournament! :crown::clap:")
-      bot.sendMessageChannel(bot.getChannel, s"/giphy I believe I can fly")
+			bot.sendMessageChannel(text = tournament.toString)
+			bot.sendMessageChannel(text = s"/giphy I believe I can fly")
     }
   }
 

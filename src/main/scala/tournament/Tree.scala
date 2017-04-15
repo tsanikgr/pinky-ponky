@@ -46,8 +46,7 @@ class Tree(players: Seq[Player]) {
   }
 
   def propagate(root: Game, leftChild: Node, rightChild: Node, notify: Boolean): Unit = {
-    val notify1 = root.p1.isEmpty
-    val notify2 = root.p2.isEmpty
+    val changed = root.p1.isEmpty || root.p2.isEmpty
     leftChild match {
       case Leaf =>
       case g: Game => root.p1 = g.winner
@@ -72,10 +71,12 @@ class Tree(players: Seq[Player]) {
       case g: Game => root.p2 = g.winner
     }
 
-    if (notify && root.p1.isDefined && root.p2.isDefined){
-      if (notify1) bot.sendMessage(root.p2.get.id, s":calendar:Your next tournament match is with... *${root.p1.get.shortName()}*")
-      if (notify2) bot.sendMessage(root.p1.get.id, s":calendar:Your next tournament match is with... *${root.p2.get.shortName()}*")
+    if (notify && changed && root.p1.isDefined && root.p2.isDefined){
+      bot.sendMessage(root.p2.get.id, s":calendar:Your next tournament match is with... *${root.p1.get.shortName()}*")
+      bot.sendMessage(root.p1.get.id, s":calendar:Your next tournament match is with... *${root.p2.get.shortName()}*")
     }
+
+    if (changed && root.p1.isDefined && root.p2.isDefined) root.updateDate()
   }
 
   def getNodes: Node = {
@@ -200,6 +201,15 @@ class Tree(players: Seq[Player]) {
       .filter(filter)
       .flatMap(_.simpleName)
   }
+
+	def getUpcomingGames(forPlayer: Option[String] = None): Seq[Game] = {
+		def filter: (Game => Boolean) =
+			if (forPlayer.isEmpty) (_) => true
+			else (game) => game.plays(forPlayer.get)
+
+		(groups.flatMap(g => g.pendingGames) ++ preorderTraversal.filterNot(_.finished))
+			.filter(filter)
+	}
 
   def toSave: String =
     (groups.map{ g => g.toSave}.mkString("","\n","\n") +
