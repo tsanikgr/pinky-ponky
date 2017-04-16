@@ -1,7 +1,8 @@
 package app
 
+import akka.actor.Cancellable
 import tournament.tournament
-import utils.{Row, Table, storage}
+import utils.{Table, storage}
 
 import scala.concurrent.duration._
 import scala.collection.mutable
@@ -11,12 +12,12 @@ import scala.collection.mutable.ArrayBuffer
   * Created by nikos on 12/11/2016.
   */
 case class Result(p1: String, p2: String, p1Score: Int, p2Score:Int) {
-  def confirm(confirmed: Boolean) = confirmed match {
+  def confirm(confirmed: Boolean): Unit = confirmed match {
     case c: Boolean if c => players.newResult(this)
     case c: Boolean if !c =>
   }
 
-  def askForConfirmation() = {
+  def askForConfirmation(): Unit = {
     val message =
       if (p1Score > p2Score) s"${bot.fromId(p2).get}, did you lose from ${bot.fromId(p1).get} $p1Score-$p2Score (yes/no)?"
       else if (p1Score < p2Score) s"${bot.fromId(p2).get}, did you beat ${bot.fromId(p1).get} $p1Score-$p2Score (yes/no)?"
@@ -24,10 +25,15 @@ case class Result(p1: String, p2: String, p1Score: Int, p2Score:Int) {
     bot.sendMessage(p2, message)
   }
 
+  def plays(p: String): Boolean = p1 == p || p2 == p
+
+  def between(player1: String, player2: String): Boolean = (p1 == player1 && p2 == player2) || (p2 == player1 && p1 == player2)
+
+	def opponent(p: String): String = if (p == p1) p2 else p1
+
   override def toString: String = s"$p1,$p2,$p1Score,$p2Score"
 }
 
-case class NotInNotifiedException(message: String) extends Exception(message)
 object confirmationQueue {
 
   private val notified = new mutable.HashMap[String, Result]
@@ -41,11 +47,11 @@ object confirmationQueue {
     all
   }
 
-  def clearPending() = pending synchronized {
+  def clearPending(): Unit = pending synchronized {
     pending.clear()
   }
 
-  def notify(p1: String, p2: String, table: Table) = {
+  def notify(p1: String, p2: String, table: Table): Unit = {
     bot.sendMessage(p1, s"You both reported the same score! Putting it down.\nHere are your new stats:\n${table.toString(true)}")
     bot.sendMessage(p2, s"You both reported the same score! Putting it down.\nHere are your new stats:\n${table.toString(true)}")
   }
@@ -111,24 +117,22 @@ object confirmationQueue {
       val p1 = players.players.filter(_.id == result.get.p1).map(p => delta(p1NewPos, p1OldPos) +: p.toSeq).head
       val p2 = players.players.filter(_.id == result.get.p2).map(p => delta(p2NewPos, p2OldPos) +: p.toSeq).head
 
-      val rows = Seq(p1, p2).map(p => Row(p))
-
-      val table = new Table(rows, Player.header)
+      val table = new Table(Seq(p1, p2), Player.header)
       if (confirmed) {
         storage.save(result.get)
         if (tournament.newResult(result.get)) tournament.confirmResult(result.get.p1,result.get.p2)
       }
       storage.savePending()
       (result.get.p1, result.get.p2, table)
-    } else throw NotInNotifiedException(s"No game awaits confirmation from $player.")
+    } else throw new Exception(s"No game awaits confirmation from $player.")
   }
 
-  def drain(key: String, fromLoading: Boolean = false) = {
+  def drain(key: String, fromLoading: Boolean = false): Cancellable = {
     implicit val ec = bot.ec
     bot.system.scheduler.scheduleOnce(1 second) {
       pending synchronized {
         if (notified.get(key).isEmpty) {
-          if (pending.get(key).isDefined && pending.get(key).get.nonEmpty) {
+          if (pending.get(key).isDefined && pending(key).nonEmpty) {
             val result = pending(key).remove(0)
             if (!fromLoading) result.askForConfirmation()
             notified += result.p2 -> result

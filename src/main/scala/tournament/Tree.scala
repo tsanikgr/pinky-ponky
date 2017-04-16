@@ -124,55 +124,16 @@ class Tree(players: Seq[Player]) {
 
   def repeat(n: Int, c: String): String = List.fill(n)(c).mkString("")
 
-  override def toString: String = root match {
-    case g: Game =>
-      val (top, bottom) = ranks
-      val games: Seq[String] = preorderTraversal.zipWithIndex.map{case(n, i) => n.toString(i)}
-      val four = s"${repeat(colWidth/2-1," ")}+${repeat(colWidth/2-2,"-")}+${repeat(colWidth/2-1,"-")}+${repeat(colWidth/2-2," ")}"
-      val lines =
-        s"""
-           |
-             |${games.head + games(1) + games(3) + games(4)}
-           |${repeat(colWidth/2-1," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|
-             |$four $four
-           |${repeat(colWidth-2," ")}|${repeat(colWidth*2-3," ")}|
-             |${games(2)} ${games(5)}
-           |${repeat(colWidth-2, " ")}|${repeat(2*colWidth-3, " ")}|
-             |${repeat(colWidth-2, " ")}+${repeat(colWidth, "-")}+${repeat(colWidth-4, "-")}+
-           |${repeat(2*colWidth-1, " ")}|
-             |${games(6)}
-           |${repeat(2*colWidth-1, " ")}|
-             |${repeat(2*colWidth-1, " ")}|
-             |                        --------->      ${games(14)}   <--------- FINAL
-           |${repeat(2*colWidth-1, " ")}|
-             |${repeat(2*colWidth-1, " ")}|
-             |${games(13)}
-           |${repeat(2*colWidth-1, " ")}|
-             |${repeat(colWidth-2, " ")}+${repeat(colWidth, "-")}+${repeat(colWidth-4, "-")}+
-           |${repeat(colWidth-2," ")}|${repeat(colWidth*2-3," ")}|
-             |${games(9)} ${games(12)}
-           |${repeat(colWidth-2," ")}|${repeat(colWidth*2-3," ")}|
-             |$four $four
-           |${repeat(colWidth/2-1," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|
-             |${games(7) + games(8) + games(10) + games(11)}
-           |
-             |""".stripMargin
-      "```" + top +
-        lines +
-        bottom + "```"
-    case _ => ""
-  }
-
   def ranks: (String, String) = {
     val gs = groups.zipWithIndex
       .map {
         case ((g: Group, i: Int)) =>
           (i,
-            if (g.finished) new Table(g.getRanks.map { case ((p, w)) => Row(Seq(p.shortName(), w))}, Seq("Group " + (i + 1), ""))
+            if (g.finished) new Table(g.getRanks.map { case ((p, w)) => Seq(p.shortName(), w)}, Seq("Group " + (i + 1), ""))
             else g.gamesTable)
-        case (_, i) => (i, new Table(Seq(Row(Seq()))))
+        case (_, i) => (i, new Table(Seq(Seq())))
       }
-      .map { case (i, g) => g.toString(printHeader = true, noQuotes = true) }
+      .map { case (i, g) => g.toString(noQuotes = true) }
       .map(_.split('\n'))
 
     def getGroup(gs: Vector[Array[String]], id: Int, line: Int): String =
@@ -241,4 +202,43 @@ class Tree(players: Seq[Player]) {
         backfill(false)
       }
   }
+
+	override def toString: String = root match {
+		case g: Game =>
+			val (top, bottom) = ranks
+			val games: Seq[String] = preorderTraversal.zipWithIndex.map{case(n, i) => n.toString(i)}
+			val four = s"${repeat(colWidth/2-1," ")}+${repeat(colWidth/2-2,"-")}+${repeat(colWidth/2-1,"-")}+${repeat(colWidth/2-2," ")}"
+			val lines =
+				s"""
+					 |
+             |${games.head + games(1) + games(3) + games(4)}
+					 |${repeat(colWidth/2-1," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|
+             |$four $four
+					 |${repeat(colWidth-2," ")}|${repeat(colWidth*2-3," ")}|
+             |${games(2)} ${games(5)}
+					 |${repeat(colWidth-2, " ")}|${repeat(2*colWidth-3, " ")}|
+             |${repeat(colWidth-2, " ")}+${repeat(colWidth, "-")}+${repeat(colWidth-4, "-")}+
+					 |${repeat(2*colWidth-1, " ")}|
+             |${games(6)}
+					 |${repeat(2*colWidth-1, " ")}|
+             |${repeat(2*colWidth-1, " ")}|
+             |                        --------->      ${games(14)}   <--------- FINAL
+					 |${repeat(2*colWidth-1, " ")}|
+             |${repeat(2*colWidth-1, " ")}|
+             |${games(13)}
+					 |${repeat(2*colWidth-1, " ")}|
+             |${repeat(colWidth-2, " ")}+${repeat(colWidth, "-")}+${repeat(colWidth-4, "-")}+
+					 |${repeat(colWidth-2," ")}|${repeat(colWidth*2-3," ")}|
+             |${games(9)} ${games(12)}
+					 |${repeat(colWidth-2," ")}|${repeat(colWidth*2-3," ")}|
+             |$four $four
+					 |${repeat(colWidth/2-1," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|${repeat(colWidth-2," ")}|
+             |${games(7) + games(8) + games(10) + games(11)}
+					 |
+             |""".stripMargin
+			"```" + top +
+				lines +
+				bottom + "```"
+		case _ => ""
+	}
 }

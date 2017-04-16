@@ -22,19 +22,6 @@ case class Player(id: String,
 	def shortName(): String = _shortName
 	def shortName(name: String) = _shortName = name
 
-	def totalGames = gamesWon + gamesLost + gamesDrawn
-	def totalSets = setsWon + setsLost
-
-	def sortCol(col: String): Int = col.toLowerCase match {
-		case "elo" => elo
-		case "games" => gamesWon + gamesLost
-		case "win%" => (gamesWon.toDouble / (gamesWon + gamesLost + gamesDrawn) * 100000.0).toInt
-		case "win %" => (gamesWon.toDouble / (gamesWon + gamesLost + gamesDrawn) * 100000.0).toInt
-		case "streak" => winStreak
-		case "sets" => setsWon + setsLost
-		case _ => elo
-	}
-
 	def getDeltaElo(res1: Int, res2: Int, elo1: Int, elo2: Int): Int = {
 		val q1 = math.pow(10.0, elo1/400.0)
 		val q2 = math.pow(10.0, elo2/400.0)
@@ -76,24 +63,16 @@ case class Player(id: String,
 		elo.toString,
 		s"${gamesWon + gamesLost}",
 		percentage(gamesWon.toDouble / (gamesWon + gamesLost + gamesDrawn)*100.0),
-		winStreak.toString,
-		s"${setsWon + setsLost} (${percentage(setsWon.toDouble/(setsWon + setsLost)*100.0)})")
+		s"${percentage(setsWon.toDouble/(setsWon + setsLost)*100.0)}",
+		winStreak.toString)
 }
 
 object Player{
-	//TODO: nemesis
-	val header = Seq("", "name", "elo", "games", "win %", "streak", "sets")
-
+	val header = Seq("", "name", "elo", "games", "win%", "set%", "streak")
 	def apply(id: String): Player = new Player(id, bot.fromId(id).get,1500,0,0,0,0,0,0)
 	def apply(id: String, fake: Boolean) = new Player(id,id,1500,0,0,0,0,0,0)
 	def isReverse(col: String): Boolean = col.toLowerCase match {
-		case "elo" => true
-		case "wins" => true
-		case "losses" => true
-		case "draws" => true
-		case "streak" => true
-		case "sets won" => true
-		case "sets lost" => true
+		case "name" => false
 		case _ => true
 	}
 }
@@ -102,9 +81,7 @@ object players {
 
 	val players = new ArrayBuffer[Player]
 
-	def apply(id: String): Player = players synchronized {
-		getOrCreate(id)
-	}
+	def apply(id: String): Player = players synchronized { getOrCreate(id) }
 
 	def getOrCreate(playerId: String): Player = players synchronized {
 		val p = players.find(_.id == playerId)
@@ -166,7 +143,7 @@ object players {
 
 		val header = Player.header.tail
 		val sortInd = header.indexWhere(h => Table.toString(h).toLowerCase == sortBy.head.toLowerCase)
-		val table = new Table(players.map(p => Row(p.toSeq)), header)
+		val table = new Table(players.map(p => p.toSeq), header)
 		val sorted =
 			if (isReverse) table.sortBy(sortBy:_*).reverse
 			else table.sortBy(sortBy:_*)
@@ -180,66 +157,34 @@ object players {
 			} else {
 				step += 1
 			}
-			Row(last +: r.values)
+			last +: r.values
 		}
 
 		new Table(rows, Player.header)
 	}
 
-	//  def leaderboard(sortBy: String = "elo", players: Seq[Player] = this.players): Table = players synchronized {
-	//    val isReverse = Player.isReverse(sortBy)
-	//    val scores =
-	//      if (isReverse) players.map(_.sortCol(sortBy)).sorted.reverse
-	//      else players.map(_.sortCol(sortBy)).sorted
-	//
-	//    var step = 0
-	//    var last = 1
-	//    val positions = scores.zipWithIndex.map{ case (r, i) =>
-	//      if (i != 0 && scores(i) != scores(i-1)) {
-	//        last += step
-	//        step = 1
-	//      } else {
-	//        step += 1
-	//      }
-	//      last
-	//    }
-	//    val rows =
-	//      if (isReverse) players.sortBy(_.sortCol(sortBy)).reverse
-	//      else players.sortBy(_.sortCol(sortBy))
-	//
-	//    val rowsWithPos = rows.zip(positions).map{ case (player,pos) => Row(pos +: player.toSeq)}
-	//    new Table(rowsWithPos, Player.header)
-	//  }
-
-	def formatName(name: String): String = {
-		val n = Table.capitalise(name.split('.').head)
-		if (n == "Konstantinos") "Kostas"
-		else if (n == "Nikolaos") "Nikos"
-		else if (n == "Lukeo") "Luke"
-		else n
-	}
-
 	def playerStats(id: String): String = {
-		def getOpponent(id: String, result: Result): String = if (result.p1 == id) result.p2 else result.p1
-
 
 		val player = players.find(_.id == id)
-		if (player.isEmpty) s"Player ${bot.fromId(id).get} has not played any games yet. :rooster:\nType `challenge @${bot.fromId(id).get}` and I'll let them know!"
+		if (player.isEmpty)
+			s"Player ${bot.fromId(id).get} has not played any games yet. :rooster:\n" +
+			s"Type `challenge @${bot.fromId(id).get}` and I'll let them know!"
+
 		else {
 			val results = storage.getResults
-			val opponents = results.filter(r => r.p1 == id || r.p2 == id).map(r => getOpponent(id, r)).distinct
+			val opponents = results.filter(r => r.plays(id)).map(_.opponent(id)).distinct
 			val ratings = opponents.map(o => players.find(_.id == o).get.elo)
-			val games = opponents.map(o => results.count(r => (r.p1 == id && r.p2 == o) || (r.p2 == id && r.p1 == o)))
+			val games = opponents.map(o => results.count(r => r.between(id, o)))
 			val win = opponents.map(o => results.count{r =>
 				((r.p1 == id && r.p2 == o) && (r.p1Score > r.p2Score)) ||
 					((r.p2 == id && r.p1 == o) && (r.p2Score > r.p1Score))
 			})
-			val sets = opponents.map(o => results.filter(r => (r.p1 == id && r.p2 == o) || (r.p2 == id && r.p1 == o)).map(r => r.p1Score + r.p2Score).sum)
+			val sets = opponents.map(o => results.filter(_.between(id, o)).map(r => r.p1Score + r.p2Score).sum)
 			val setsWon = opponents.map(o => results
-				.filter(r => (r.p1 == id && r.p2 == o) || (r.p2 == id && r.p1 == o))
+				.filter(_.between(id, o))
 				.map(r => if (r.p1 == id) r.p1Score else r.p2Score).sum)
 			val rows = for (i <- opponents.indices) yield {
-				Row(Seq(players.filter(_.id == opponents(i)).head.shortName(), ratings(i), games(i), f"${win(i).toDouble/games(i) * 100.0}%.0f%%", f"${sets(i)} (${setsWon(i).toDouble/sets(i) * 100.0}%.0f%%)"))
+				Seq(players.filter(_.id == opponents(i)).head.shortName(), ratings(i), games(i), f"${win(i).toDouble/games(i) * 100.0}%.0f%%", f"${setsWon(i).toDouble/sets(i) * 100.0}%.0f%%")
 			}
 			val averageOpponentRating = {
 				val weighted = setsWon.zip(sets).zip(opponents)
@@ -249,12 +194,20 @@ object players {
 
 				weighted._1.toDouble / weighted._2.toDouble
 			}
-			val header = Seq("Opponent", "Rating", "Games", "Win %", "Sets (win %)")
+			val header = Seq("Opponent", "Rating", "Games", "Win%", "Set%")
 			val pInfo: Seq[Any] = player.get.toSeq
-			s"${new Table(Seq(Row(getPosition(id) +: pInfo)),Player.header).toString(true)}\n" +
+			s"${new Table(Seq(getPosition(id) +: pInfo),Player.header).toString(true)}\n" +
 				s"${new Table(rows, header).sortBy("Games").reverse.toString(true)}\n" +
 				f"Average opponent rating: *$averageOpponentRating%.0f*\n" +
 				s"Nemesis: *${opponents.zip(win).zip(games).sortBy{case ((_,w),g) => w.toDouble/g}.map(_._1._1).take(1).map(id => apply(id).shortName()).head}*"
 		}
+	}
+
+	def formatName(name: String): String = {
+		val n = Table.capitalise(name.split('.').head)
+		if (n == "Konstantinos") "Kostas"
+		else if (n == "Nikolaos") "Nikos"
+		else if (n == "Lukeo") "Luke"
+		else n
 	}
 }

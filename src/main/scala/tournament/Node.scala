@@ -2,13 +2,13 @@ package tournament
 
 import java.time.LocalDate
 import app.{Player, Result}
-import utils.{Row, Table}
+import utils.Table
 
 /**
   * Created by nikos on 20/11/2016.
   */
 abstract sealed class Node {
-  val colWidth = tournament.colWidth
+  val colWidth: Int = tournament.colWidth
   def winner: Option[Player]
   def finished: Boolean
 }
@@ -25,7 +25,7 @@ case class Game(var p1: Option[Player] = None,
 	var created: Option[LocalDate] = None
 	updateDate()
 
-	def updateDate(date: Option[LocalDate] = None) = {
+	def updateDate(date: Option[LocalDate] = None): Unit = {
 		created =
 			if (p1.isDefined && p2.isDefined && !finished) {
         if (date.isDefined) date
@@ -33,11 +33,11 @@ case class Game(var p1: Option[Player] = None,
       } else None
 	}
 
-  def setScore(p1Score: Int, p2Score: Int) = { score1 = Some(p1Score); score2 = Some(p2Score)}
-  def deleteScore() = {score1 = None ; score2 = None}
+  def setScore(p1Score: Int, p2Score: Int): Unit = { score1 = Some(p1Score); score2 = Some(p2Score)}
+  def deleteScore(): Unit = {score1 = None ; score2 = None}
   def finished: Boolean = leftChild.finished && rightChild.finished && ((p1.isEmpty && p2.isEmpty) || (p1.isDefined && p2.isEmpty) || (p1.isEmpty && p2.isDefined) || (score1.isDefined && score2.isDefined))
   def isBetween(player1: String, player2: String): Boolean = isBetween(tournament.player(player1), tournament.player(player2))
-	def opponent(id: String) = if (p1.isDefined && p1.get.id == id) p2 else if (p2.isDefined && p2.get.id == id) p1 else None
+	def opponent(id: String): Option[Player] = if (p1.isDefined && p1.get.id == id) p2 else if (p2.isDefined && p2.get.id == id) p1 else None
   def isBetween(player1: Player, player2: Player): Boolean = {
     (p1.isDefined && p2.isDefined) &&
       ((p1.get.id == player1.id && p2.get.id == player2.id) ||
@@ -175,8 +175,8 @@ case class Group(id: Int, players: Seq[Player]) extends Node {
   }
 
   def gamesTable: Table = new Table(games.map(g =>
-    Row(Seq(g.p1.map(_.shortName()).getOrElse("None") + " - " + g.p2.map(_.shortName()).getOrElse("None"),
-      if(g.score1.isDefined && g.score2.isDefined) g.score1.get + "-" + g.score2.get else ""))), Seq("Group "+ (id + 1), ""))
+    Seq(g.p1.map(_.shortName()).getOrElse("None") + " - " + g.p2.map(_.shortName()).getOrElse("None"),
+      if(g.score1.isDefined && g.score2.isDefined) g.score1.get + "-" + g.score2.get else "")), Seq("Group "+ (id + 1), ""))
 
   def toSave: String = players.map(p => s"$id,${p.id}").mkString("\n")
 
