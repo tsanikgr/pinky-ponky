@@ -63,6 +63,14 @@ Then you can reply `yes` or `no`, and you 'll both get a confirmation message:
 
 <img src="https://github.com/tsanikgr/pinky-ponky/blob/master/doc/tournament.png" width="100%">
 
+Tournaments work for any number of players: The bot will create at most 8 groups, and will fill them in with as many players as required.
+
+In group stage, everyone plays with everyone else in the group once.
+
+Match making is seeded for the best 8 players: The best to player (according to the leaderboards) will only meet the second best in the final, the best 4 in the semi-finals etc. The rest of the players in each group are selected in random.
+
+The bot will notify daily for upcoming matches.
+
 # Administrator commmands:
 
 The administrator of the bot, declared in `credentials.txt`, can issue some additional commands.
