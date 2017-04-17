@@ -1,3 +1,9 @@
+# pinky-ponky is a ping pong bot for [Slack](www.slack.com) 
+written in Scala (uses the [slack-scala-client](https://github.com/gilbertw1/slack-scala-client) library)
+
+It keeps track of leaderboards, and can help you organise tournaments!
+With minor modifications it can also be used for other 2 player games.
+
 # Getting started
 Clone the repo, and create a file `src/main/resources/credentials.txt` and put in it:
 * 1st line: slack token
@@ -14,7 +20,9 @@ games-channel
 To get the slack token, go to `Apps & Integrations` on the slack menu, then `Manage`(top right in Slack's website), then choose `Custom Integrations` on the sidebar, then `Bots`, and finally click `Add configuration`.
 
 # Run
+If you haven't already, install [sbt](http://www.scala-sbt.org/). Then
 In a terminal navigate to the root of the project and type
+
 `sbt run`
 
 # Usage
@@ -58,7 +66,7 @@ Then you can reply `yes` or `no`, and you 'll both get a confirmation message:
 # Administrator commmands:
 
 The administrator of the bot, declared in `credentials.txt`, can issue some additional commands.
-See [Cmd.scala]("https://github.com/tsanikgr/pinky-ponky/blob/master/src/main/scala/app/Cmd.scala")
+See [Cmd.scala](src/main/scala/app/Cmd.scala)
 
 ### General
 * `exit`: To stop the bot
