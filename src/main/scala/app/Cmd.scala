@@ -312,8 +312,8 @@ case class Top10Cmd(message: Message) extends Cmd(message) {
 
 case class SendMessage(message: Message) extends Cmd(message) {
   def execute: Try[String] = Try{
-		if (args.size > 2) bot.sendMessage(bot.nameToId(args(1)).get, args.drop(2).mkString(" "))
-		else bot.sendMessageChannel(text = args.drop(2).mkString(" "))
+//		if (args.size > 2) bot.sendMessage(bot.nameToId(args(1)).get, args.drop(2).mkString(" "))
+		bot.sendMessageChannel(text = args.drop(1).mkString(" "))
     s"""OK, sent"""
   }
 }
