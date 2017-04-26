@@ -71,6 +71,7 @@ object Cmd {
 			case c: String if c.startsWith("vst") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => NewTournamentResult(message)
       case c: String if c.startsWith("delete") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => DeleteTournamentResult(message)
 			case c: String if c.startsWith("extend") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => ExtendDeadline(message)
+      case c: String if c.startsWith("notify") && bot.fromId(message.user).getOrElse("unknown") == bot.admin => NotifyCmd(message)
       case _ => NoReplyCmd(message)
     }
   }
@@ -190,7 +191,7 @@ case class ReloadCmd(message: Message) extends Cmd(message) {
 case class ChallengeCmd(message: Message) extends Cmd(message) {
   def execute: Try[String] = Try {
     bot.sendMessage(args(1), s"${bot.fromId(user).get} challenged you to a game of :table_tennis_paddle_and_ball:.")
-    "Ok, I 'll let him know!"
+    "Ok, I 'll let them know!"
   }
 }
 
@@ -335,4 +336,13 @@ case class NewTournamentResult(message: Message) extends Cmd(message) {
 		if (tournament.newResult(result)) tournament.confirmResult(result.p1,result.p2)
 		s"""OK"""
 	}
+}
+
+/********************************************************************************/
+
+case class NotifyCmd(message: Message) extends Cmd(message) {
+  def execute: Try[String] = Try{
+    tournamentWatcher.notifyDeadlines()
+    s"""OK"""
+  }
 }

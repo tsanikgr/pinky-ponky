@@ -20,7 +20,7 @@ object tournamentWatcher {
 	implicit val system: ActorSystem = bot.getSystem
 	implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-	val runAt = 10			//10 am
+	val runAt = 11			//11 am
 	val deadline = 7		//7 days
 
 	def startWatching(): Unit = {
