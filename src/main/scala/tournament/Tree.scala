@@ -51,19 +51,19 @@ class Tree(players: Seq[Player]) {
       case Leaf =>
       case g: Game => root.p1 = g.winner
       case g@Group(id, _) =>
-        if (id % 2 == 0) {
+//        if (id % 2 == 0) {
           root.p1 = g.winner
-          root.p2 = groups(id + 1) match {
+          root.p2 = groups((id + 4)%8) match {
             case g: Group => g.runnerUp
             case _ => None
           }
-        } else {
-          root.p1 = groups(id - 1) match {
-            case g: Group => g.runnerUp
-            case _ => None
-          }
-          root.p2 = g.winner
-        }
+//        } else {
+//          root.p1 = groups(id - 1) match {
+//            case g: Group => g.runnerUp
+//            case _ => None
+//          }
+//          root.p2 = g.winner
+//        }
     }
     rightChild match {
       case Leaf =>
@@ -82,7 +82,7 @@ class Tree(players: Seq[Player]) {
   def getNodes: Node = {
     def childInd(parentInd: Int, right: Boolean): Int = parentInd * 2 + { if (right) 1 else 0 }
     def createNode(depth: Int, ind: Int): Node =
-      if (depth == 3) Game(leftChild = groups(ind), rightChild = groups(if (ind % 2 == 0) ind+1 else ind - 1))
+      if (depth == 3) Game(leftChild = groups(ind), rightChild = groups((ind + 4) % 8))
       else Game(leftChild = createNode(depth + 1, childInd(ind, right = false)), rightChild = createNode(depth + 1, childInd(ind, right = true)))
 
     createNode(0, 0)
