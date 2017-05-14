@@ -25,18 +25,18 @@ object tournamentWatcher {
 
 	def startWatching(): Unit = {
 //		system.scheduler.schedule(30 seconds, 24 hours) {
-		system.scheduler.schedule(at10am, 24 hours) { () =>
+		system.scheduler.schedule(initialDelay, 24 hours) {
 			if (tournament.exists) {
-				finishGames()
+//				finishGames()
 				notifyDeadlines()
 			}
 		}
 	}
 
-	def at10am: FiniteDuration = {
+	def initialDelay: FiniteDuration = {
 		val now = LocalDateTime.now()
-		val at10 = LocalDateTime.of(now.getYear, now.getMonth, now.getDayOfMonth, runAt, 0, 0).plus(1, ChronoUnit.DAYS)
-		ChronoUnit.SECONDS.between(LocalDateTime.now(), at10) seconds
+		val atRunTime = LocalDateTime.of(now.getYear, now.getMonth, now.getDayOfMonth, runAt, 0, 0).plus(1, ChronoUnit.DAYS)
+		ChronoUnit.SECONDS.between(LocalDateTime.now(), atRunTime) seconds
 	}
 
 	def tournamentStarted(): Unit = {
@@ -102,10 +102,15 @@ object tournamentWatcher {
 				.toSeq.sortBy(_._1)
 				.foreach { case (days, opps) =>
 					val message =
-						if (opps.length == 1) s"You have *$days days* to play with " + opps.head + " for the tournament."
-						else if (opps.length > 1) s"You have *$days days* to play with " + opps.init.mkString(", ") + " and " + opps.last + " for the tournament."
-						else ""
-
+						if (days > 0) {
+							if (opps.length == 1) s"You have *$days days* to play with " + opps.head + " for the tournament."
+							else if (opps.length > 1) s"You have *$days days* to play with " + opps.init.mkString(", ") + " and " + opps.last + " for the tournament."
+							else ""
+						} else {
+							if (opps.length == 1) s"You have to play today with " + opps.head + " for the tournament!"
+							else if (opps.length > 1) s"You have to play today with " + opps.init.mkString(", ") + " and " + opps.last + " for the tournament."
+							else ""
+						}
 					if (message != "") {
 						bot.sendMessage(p.id, message, interval seconds)
 						interval += 1
